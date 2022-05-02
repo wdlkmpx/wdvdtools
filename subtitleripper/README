@@ -1,0 +1,419 @@
+Author: Arne Driescher 
+Date: 2002-08-14
+Project homepage: http://subtitleripper.sourceforge.net
+
+https://ftp.osuosl.org/pub/blfs/conglomeration/transcode/transcode-1.1.7.tar.bz2
+
+#	$Id: README,v 1.10 2003/02/25 10:21:24 driescher Exp $	
+
+1) What is this package for?
+============================
+
+This package extracts DVD subtitles from a subtitle stream and
+converts it to pgm or ppm images or into VobSub format.  The main
+purpose is to provide the required input to OCR software to convert
+the subtitle images into ASCII text. Please note that the conversion
+into ASCII is not part of this package but requires an OCR program
+like gocr.
+
+
+2) Installation
+===============
+I assume you have put these files in the directory
+  transcode/contrib/subrip
+The default pathes are adjusted to this directory.
+(The current version does not depend on transcode's
+ directory structure but later versions might.)
+
+(Hint: 
+ If you don't know what I am talking about here
+ just type
+   make
+and hope for the best.)
+
+Check if you have libppm (including ppm.h)
+installed on your computer. 
+If not
+modify the lines in Makefile
+from
+### enable ppm support ###
+DEFINES  += -DHAVE_LIB_PPM_
+LIBS     = -lppm
+
+to
+
+### enable ppm support ###
+#DEFINES  += -DHAVE_LIB_PPM_
+#LIBS     = -lppm
+
+If you would like support for compressed PGM files
+do the same for the appropriate lines in the Makefile.
+To use this you need libz and zlib.h.
+
+ 
+Then simply run
+  make 
+and you are done. 
+
+Please note that the executables are not copied to
+any directory in your search path. You might want to
+add the subtitleripper directory to your searchpath
+or copy/linke the files to e.g. /usr/bin
+
+3) Requirements
+===============
+You need a transcode version newer than
+transcode-0.6.0pre4 for extracting
+a subtitle stream from a VOB file. See
+http://www.theorie.physik.uni-goettingen.de/~ostreich/transcode/
+for more information about transcode.
+
+If you want to convert the pgm images into
+ASCII some OCR software is required.
+You might want to have a look at gorc:
+http://jocr.sourceforge.net/
+(Please read the README.gocr too.)
+
+VobSub does not require any additional packages
+but you need a video play like mplayer
+(http://mplayer.dev.hu/homepage/news.html)
+to really see this subtitles. 
+
+4) Basic knowledge about subtitle ripping
+========================================
+DVDs save subtitles as images that 
+DVD player software (e.g. mplayer
+http://mplayer.dev.hu/homepage/news.html )
+overlay to the main movie screen. This
+approach is extremely powerful because
+using images instead of normal text 
+does not put any restrictions on supported
+languages, character sets or size.
+However, if you want to convert your
+DVD to an avi-file you might prefer
+to store the subtitles in ASCII format.
+Most avi-file player (e.g. mplayer)
+allow you to display your ASCII subtitles
+together with your avi-file. This approach
+has the following advantages:
+I)   You can support different languages
+     by providing ASCII subtitle files
+     for every language you want.
+II)  You don't have to use the subtitles
+     at all if you don't like them.
+III) The player software normally supports
+     different font sizes for display
+     so that you can customize the display
+     to your needs.
+
+The disadvantages are:
+I)   It is a _lot_ of work to convert
+     the original DVD subtitles to ASCII
+     subtitles. 
+
+II)  ASCII subtitle cannot represent all
+     symbols in the original DVD subtitles
+     so, depending on the DVD title,
+     some information might be missing.
+
+Alternatives:
+   transcode supports the rendering of
+   subtitles into the avi-file. Please
+   read the transcode documentation
+   refering to the extsub option
+   on how to do it.
+
+   VobSub saves subtitles as
+   the pictures. So you
+   have the same advantages as in the
+   original DVD subtitles but this
+   format requires much more space
+   to store the subtitles. 
+
+
+5) How to use this package
+==========================
+
+If you want to use VobSub subtitles
+please read the file README.vobsub.
+
+For ACSII subtitles read on:
+
+[ ---------------------------------------------------------------------------------
+  Here the short version for the impatient reader:
+   cat vts_01_?.vob | tcextract -x ps1 -t vob -a 0x20 | subtitle2pgm -o my_movie
+   pgm2txt my_movie
+   srttool -s -i my_movie.srtx -o my_movie.srt 
+  --------------------------------------------------------------------------------- ]
+
+The intended use is as follows:
+
+First make yourself familiar with the
+subtitles you want to convert by playing
+your DVD with subtitles enabled. Basically,
+make sure that your DVD really has subtitles
+for the language you want and that the
+subtitle font is reasonable simple for
+OCR.
+
+Now copy the appropriate VOB files in 
+/path/to/dvd/viteo_ts/vts_*.vob 
+to your hard-disk and make sure
+that these files are un-encrypted!
+(You might want to have a look at tccat (part of transcode)
+ or css_cat (part of libcss) but please respect 
+ the applicable law in your country.)
+
+Now extract the subtitle stream for
+the language you want by using tcextract
+from the transcode distribution.
+Please read the transcode documentation about 
+the tcextract options (e.g. -a 0x20 is the first
+subtitle language, -a 0x21 the seconds and so on).
+Example:
+cat vts_01_?.vob | tcextract -x ps1 -t vob -a 0x20 >  subtitle_stream_en.ps1
+
+This example would extract the subtitle stream from the vts_01_?.vob
+files and put them all into the file subtitle_stream_en.ps1.
+(Please note that it is _not_ a good idea to restart
+tcextract for every vob-file. Without piping all vob's
+in one run, tcextract cannot correct time stamp discontinuities 
+that appeare on some DVDs. In the example  "?" is a wildcard
+for vts_01_1.vob ... vts_01_9.vob to make sure that _all_ relevant
+vobs are piped into tcextract.) 
+
+The next step is to convert subtitle_stream_en.ps1 into
+pgm images by use of subtitle2pgm
+(Make sure you have ample space on your file system
+If you want to save some space add the option -g 2 to
+produce compressed PGM files (recommended).
+You can also try to crop the image with e.g. -C 1
+to save even more space and time)
+
+Example:
+   subtitle2pgm -i subtitle_stream_en.ps1 -o my_movie
+
+This writes every subtitle into a separate
+file my_movieXXXX.pgm where XXXX is the title number starting with 0001.
+Moreover, it produces a file my_movie.srtx 
+containing the time stamps for the appropriate image file.
+(more on this later).
+
+If the conversion worked as expected you can check
+the pgm files with some standard image viewer (e.g xv *.pgm).
+
+The next step would be to convert these text-images into ASCII-text.
+However, in most cases the text-images produced in this way
+are difficult to handle by OCR software. OCR software loves
+images containing only black and white pixels where letters
+are clearly separated from each other. On my example stream the
+letters often look like this:
+
+   *********************
+   *xxxxxxxxxxxxxxxx**x*
+   *******xxx*********x*
+         *xxx*       *x*
+         *xxx*       *x*
+         *xxx*       *x*
+         *xxx*       *x*
+         *xxx*       *x*
+         *xxx*       *x*
+         *xxx*       *x*
+         *xxx*       *x*************
+         *xxx*       *xxxxxxxxxxxxx*
+         *****       ***************
+The example displays the two letters "Tl" as they might be
+coded in the image.
+The letters are displayed in an outline form with "*" 
+and "x" being different gray levels. Please note that
+the two letters "Tl" are connected with each other.
+Therefore the OCR software will have problems to 
+distinguish these two letters and you might get lots
+of conversion errors. To make live easier for the
+OCR software try different color options for
+subtitle2pgm. You should try to find a color combination
+where "*" is coded as the background color (e.g. white)
+and "x" as the foreground color (e.g. black). 
+The example should then look like this:
+
+                        
+    xxxxxxxxxxxxxxxx  x 
+          xxx         x 
+          xxx         x 
+          xxx         x 
+          xxx         x 
+          xxx         x 
+          xxx         x 
+          xxx         x 
+          xxx         x 
+          xxx         x             
+          xxx         xxxxxxxxxxxxx 
+                                    
+
+For me the options
+   subtitle2pgm -c 255,255,0,255 -i subtitle_stream_en.ps1 -o my_movie
+worked best on the examples I have just tested. 
+I have made this color combination the default
+but many DVD need other color combinations. 
+Simply play around with the four options to -c to get
+a feeling for the color combinations in your images.
+One of these options should work for you:
+  -c 255,0,255,255
+  -c 255,255,0,255
+  -c 255,255,255,0
+  -c 0,255,255,255
+
+
+(What are these arguments to -c option?)
+  DVD subtitle allow up to 4 colors. The 4 arguments to -c
+  specify the grey level for these 4 colors where
+  0=black and  255=white. 
+
+If you think your images are now easy enough for the OCR software,
+try to run it on the images.  An example script is given in the file
+pgm2txt. For the example "my_movie" in this document you would call it
+in this way
+
+   pgm2txt -f en my_movie 
+
+The first argument it the basename of all your pgm files. The
+script tries to find my_movie*.pgm and my_movie*.pgm.gz
+files. The argument to -f is the language filter
+that you want to use for gocr output. Currently
+English, French and German are (somehow) supported. The language filter
+is nothing else then a search/replace table
+in form of a sed script. If you are tired of fixing
+the same words again and again you can easily
+adjust this script to your needs.
+Have a look at the file gocrfilter_en.sed 
+for more information and read the sed documentation
+for the syntax. 
+
+
+How to make working subtitles 
+=============================
+Until now you have produced the ASCII text
+for the subtitle files and as mentioned earlier,
+a srtx-file with the time stamps in it. These
+time stamps tell the avi-file player software
+at what time it has to display your text.
+A typical entry in a playable srt-subtitle file
+would look like this:
+
+15
+00:04:00,479 --> 0:4:02,270
+  ...and bird, and beast, and flower...
+
+
+However, in your srtx-file this would look like
+
+15
+00:04:00,479 --> 0:4:02,270
+my_movie0001.pgm.txt  
+
+So, this means the srtx-file is a template file 
+for the srt-subtitle file where 
+instead of the text you really want to display
+the filename of the corresponding ASCII file
+is given. What you have to do is to replace
+the filenames with the corresponding ASCII text.
+But don't worry. The little program "srttool"
+can do this task for you.
+Simply run 
+  srttool -s -i my_movie.srtx -o my_movie.srt
+
+to substitute the given filenames by there content
+and write the result to my_movie.srt.
+
+If all goes well, you have produced your first subtitle
+file. Try to play it with mplayer, e.g.
+mplayer -ao sdl -vo sdl my_movie.avi -sub my_movie.srt
+
+Until now, tools did all the work for you. But now
+it is your turn. The OCR process certainly produced
+some bugs in the subtitle texts. You should load
+the srt file into your editor and at least run 
+a spell-checker on it. Didn't I tell you that
+converting subtitles is time consuming? 
+
+
+
+More on subtitle processing
+===========================
+
+In general, live is more complicated than that.
+A typical problem is that subtitle timing is
+bad and the subtitles are displayed at the wrong time.
+You can either ask your player to adjust this
+e.g option -subdelay for mplayer)
+or use 
+  srttool -d 5.3 -i my_movie.srt -o my_movie_good_timing.srt
+to e.g. shift the timing by 5.3 seconds.
+
+A second problem arises for movies that are split
+into many files (e.g. a DVD converted to 2 CDs).
+In this case you have to split the subtitle file
+into as many parts as you have avi-files.
+You can do the splitting by running 
+
+  srttool -c 1,100 -i my_movie.srt -o my_movie-cd1.srt
+  srttool -r -c 101,9999 -i my_movie.srt -o my_movie-part-cd2.srt
+
+in case the first 100 subtitles correspond to your first
+avi-file and all the rest to the second.
+
+Splitting does _not_ adjust the numeration or time stamps by itself.
+That's why the -r option is added to renumber the second part.
+
+After this you would have to adjust the timing so that
+the first subtitle in the second part starts at the start of
+the corresponding avi-file.
+Use
+  srttool -a 00:00:01,000 -i my_movie-renumbered-cd2.srt -o my_movie-cd2.srt
+to let the first subtitle start at exactly 1 second after the corresponding avi-file
+starts. The following subtitles are then adjusted accordingly.
+
+You could also put these last steps into one command line if you want:
+  srttool -c 101,9999 -r -a 00:00:01,000 -i my_movie.srt -o my_movie-cd2.srt
+
+Hint:
+The documentation for all srttool options is
+in README.srttool 
+
+
+Known Bugs:
+===========
+On some DVDs subtitle2pgm will produce messages like this:
+spudec: Error determining control type 0xd1.  Skipping -5 bytes.
+SPUasm: invalid fragment
+SPUtest: broken packet!!!!! y=10611 < x=22471
+SPUtest: broken packet!!!!! y=0 < x=4221
+spudec: Error determining control type 0x70.  Skipping -303 bytes.
+SPUtest: broken packet!!!!! y=511 < x=64012
+spudec: Error determining control type 0x27.  Skipping -6 bytes.
+
+In most cases you can ignore these messages. However,
+in rare cases the images for some subtitles are
+unusable. I don't know of any solution to this problem
+simply because there is no documentation for some
+of the data structures in the subtitle stream. So, if
+you are using an open source DVD player that can correctly
+display these broken subtitles please write me an email
+which program/version it is. With some luck I can extract the
+missing data structure from the source and add it to
+the subtitle converter.
+ 
+
+Problems
+===========
+This software is an alpha version and I can guarantee you
+many unpleasant bugs (although I don't know any). 
+Especially, transcode is still
+under development and the internal file format for
+the subtitle stream is subject to changes. So, please
+don't complain if you are using an old version of this program.
+Anyway, if you thing you have to make some useful comments
+on this software write me an E-mail (driescher@mpi-magdeburg.mpg.de).
+Please don't complain about bad OCR results to me
+(but perhaps you could encourage the gocr developer in there work). 
+All I know about gocr usage is explained in README.gorc.

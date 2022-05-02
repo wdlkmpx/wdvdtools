@@ -1,0 +1,81 @@
+#!/bin/sh
+
+# Project name and version
+PACKAGE="wdvdtools"
+VERSION="1.0"
+PACKAGE_URL=''
+
+# Flags that will be used in all makefiles that compile code...
+PROJECT_CFLAGS='-Wall -O2' # -Wextra -Wno-unused-parameter -Wno-missing-field-initializers
+PROJECT_CXXFLAGS="${PROJECT_CFLAGS}"
+PROJECT_CPPFLAGS=''
+PROJECT_LDFLAGS=''
+PROJECT_LXXFLAGS=''
+PROJECT_LIBS=''
+
+# Project type, use C to avoid checking for C++ compiler and stuff
+# supported values: C, C++ ("" = C++)
+PROJECT_TYPE=C
+
+# config.h: custom extra lines
+w_config_h_extra_lines=""
+
+# config.mk: custom extra lines
+w_config_mk_extra_lines=""
+
+
+# configure the project using the commands provided
+# by `configure` and other scripts and commands/tools
+w_main_func()
+{
+	# GCC=yes if gcc has been detected
+
+	# if the Makefiles are only compatible with GNU make, use w_require_gnu_make
+	#w_prefer_gnu_make
+
+	# check required headers and exit on error
+	w_check_headers_required stdio.h
+
+	# detect the presence of headers
+	# config.h: define HAVE_ZCONF_H if zconf.h is present, etc
+	w_check_headers sys/ioctl.h termios.h
+	w_check_headers dlfcn.h sys/param.h #libdvdread
+}
+
+# once everything is done, you can fix things, etc
+w_finish_func()
+{
+    if [ "$OS_TARGET" != "MinGW" ] ; then
+        # assume region builds on all unix platforms...
+        echo "REGIONSET = regionset" >> config.mk
+        echo "VOBCOPY   = vobcopy" >> config.mk
+    fi
+
+    if [ -d 0lib/libdvdread ] && [ -z "$LIBDVDREAD_LIBS" ] ; then
+        echo "* Using local libdvdread"
+        echo "LOCAL_LIBDVDREAD  = 0lib/libdvdread" >>  config.mk
+        echo "LIBDVDREAD_CFLAGS = -I$(pwd)/0lib/libdvdread" >> config.mk
+        echo "LIBDVDREAD_LIBS   = -L$(pwd)/0lib/libdvdread -ldvdread" >> config.mk
+    fi
+}
+
+#=====================================================================
+# special scripts for optional features and various tasks
+# checks are run after w_main_func
+#
+# - source w_conf/xxx script to support a specific feature
+# - these scripts are meant to be generic, so any project can add them
+# - most of these scripts can handle --enable/--disable cmd options
+#   to make it easier to replace autoconf
+#
+# In most cases, if a feature is enabled, it will be defined in config.h
+#   #define HAVE_ZLIB 1
+# And config.mk
+#   ZLIB_CFLAGS =
+#   ZLIB_LIBS   =
+
+if [ -d 0lib/libdvdread ] ; then
+    W_LIBDVDREAD_IS_OPTIONAL=yes
+fi
+#W_LIBDVDREAD_MIN_VERSION=
+. w_conf/libdvdread

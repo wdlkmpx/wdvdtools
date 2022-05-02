@@ -1,0 +1,86 @@
+Author: Arne Driescher 
+Date: Mar 01 2002
+
+What is subtitle2pgm?
+========================
+
+This program extracts DVD subtitles from a subtitle stream and converts it to pgm, ppm 
+or PNG images. The main purpose is to  provide the required input to OCR software
+to convert the subtitle images into ASCII text. However, it is currently also used to
+provide preview images for dvd::rip and could be used to remaster DVD subtitles
+with DVDauthor.
+
+General usage
+============
+
+Convert a subtitle stream to pgm images.
+The subtitle stream has to be produced by 
+tcextract, e.g.
+           tcextract -x ps1 -t vob -a 0x20 -i file.vob
+and can be piped directly into subtitle2pgm, e.g.
+           tcextract -x ps1 -t vob -a 0x20 -i file.vob | subtitle2pgm
+
+If the subtitle stream already exists as a file e.g. subtitle_stream.ps1
+use the -i option to read from a file.
+
+
+subtitle2pgm [options]
+
+
+Options
+=======
+-i <filename>              Use filename for input instead of stdin.
+-o <basename>              Use base_name for output files. If not given
+                           movie_subtitle will be used for as output file basename.
+                           Output files names are of the form basenameXXXX.pgm
+                           where XXXX is a sequence number. Existing files
+                           will be overwriten without warning!
+
+-c <c0,c1,c2,c3>           Override the default grey levels in output image.
+                           Default is 255,255,0,255.  Valid values are in the range
+                           0<=c<=255 where 0 is black and 255 white.
+-g <format>                Set output image format to 0=PGM (default),
+                           1=PPM, 2=PGM.GZ. For PPM and PGM.GZ output
+                           the program must have been compiled with support
+                           for it. -g 2 is recommended to save some space
+                           on your harddisk. Since version 0.3-3 you can also
+                           select PNG output by using 3=PNG_GRAY (simple gray image),
+                           4=PNG_GRAY_ALPHA (gray image with alpha channel) and
+                           5=PNG_RGAB (8 bit RGB + alpha channel).
+
+-t <format>                Set the outputformat for the tag file. 0 (default)
+                           is used for srtx-files used by srttool (see README.srttool)
+                           and 1 produces an XML file format usable by DVDauthor
+                           ( http://dvdauthor.sourceforge.net/ ). 
+-l <seconds>               Add <seconds> to PTS for every DVD-9 layer skip (default 0.0).
+                           The internal presentation time stamp (PTS) in VOB files
+                           is reset to 0 if the a new layer is started. This
+                           is already handled by tcextract and should not be
+                           noticable in subtitle2pgm. If for any reason your timing
+                           is misadjusted after a layer skip you can try to add
+                           an appropriate offset with this option.
+
+-C <border>                Reduce border around the text to <border>
+                           pixels. Many DVDs come with full screen
+                           subtitles where only a tiny part is really
+			   covered with text. So, saving only the
+                           interesting part of the image saves space
+			   on your hard disk. Default: Don't crop.
+			   Usually you might want to use this option
+			   with a small value for <border> e.g. -C 0. 
+ 
+
+-e <hh:mm:ss,n>            Extract only n subtitles starting from the
+                           time stamp hh:mm:ss. This is intended for
+                           getting a short overview about what the
+                           subtitles would look like. E.g.
+                           -e 00:05:00,10 
+                           gives you the first 10 subtitles but
+                           skipping subtitles within the first 5 min.
+
+
+-v                         Enables some more output messages that
+                           you usually won't need.
+
+-P                         Write a progress report so that you can
+                           see the program is doing something useful.

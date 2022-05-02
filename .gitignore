@@ -1,0 +1,16 @@
+config.log
+config.h
+config.mk
+config.sh
+*.o
+*.a
+*.so*
+*.mo
+*.exe
+
+dvdbackup/dvdbackup
+lsdvd/lsdvd
+regionset/dvdregionset
+vamps/vamps
+vamps/play_cell
+vobcopy/vobcopy

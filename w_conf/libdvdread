@@ -1,0 +1,87 @@
+#!/bin/sh
+# http://unlicense.org/
+
+# optional variables to set before sourcing this script
+#
+# - W_LIBDVDREAD_IS_OPTIONAL=yes [show --disable-libdvdread in --help msg]
+# - W_LIBDVDREAD_MIN_VERSION=xxx [minimun supported version, .pc file is required]
+#
+
+#=======================================
+w_new_option libdvdread LIBDVDREAD
+#=======================================
+
+libdvdread_pc_pkg="dvdread"
+
+
+opt_print_libdvdread()
+{
+	if [ "$W_LIBDVDREAD_IS_OPTIONAL" = "yes" ] ; then
+		echo "  --disable-libdvdread           do not build LIBDVDREAD support (autodetect)"
+	fi
+}
+
+
+opt_configure_libdvdread()
+{
+	if [ "$W_LIBDVDREAD_IS_OPTIONAL" = "yes" ] ; then
+		enable_libdvdread=check
+	else
+		enable_libdvdread=yes
+		return
+	fi
+
+	for i in $@
+	do
+		case $i in
+		--enable-libdvdread)  enable_libdvdread=yes ;;
+		--disable-libdvdread) enable_libdvdread=no ;;
+		esac
+	done
+}
+
+
+opt_check_libdvdread()
+{
+	if [ "$enable_libdvdread" = "no" ] ; then
+		return
+	fi
+
+	if [ -n "$LIBDVDREAD_CFLAGS" ] || [ -n "$LIBDVDREAD_LIBS" ] ; then
+		echo "Checking for LIBDVDREAD... \$LIBDVDREAD_CFLAGS/\$LIBDVDREAD_LIBS"
+	else
+		pcpkg=
+		for onepkg in ${libdvdread_pc_pkg}
+		do
+			if w_pkgconfig_check ${onepkg} ${W_LIBDVDREAD_MIN_VERSION} ; then
+				pcpkg=${onepkg}
+				break
+			fi
+		done
+
+		if [ -z "$pcpkg" ]  && [ -z "${W_LIBDVDREAD_MIN_VERSION}" ] ; then
+			w_check_header_and_libs dvdread/dvd_reader.h -ldvdread
+			if [ $? -eq 0 ] ; then
+				#LIBDVDREAD_CFLAGS=...
+				LIBDVDREAD_LIBS="-ldvdread"
+				pcpkg=configure
+			fi
+		fi
+		#--
+		if [ -z "$pcpkg" ] ; then
+			if [ "$enable_libdvdread" = "yes" ] ; then
+				exit_error "pkg-config: libdvdread was not found"
+			fi
+			return
+		fi
+		if [ ! -f "$pcpkg" ] ; then
+			# $pcpkg must not be a file, otherwise it is a custom xxx-config file
+			LIBDVDREAD_CFLAGS="$(run_pkg_config ${pcpkg} --cflags 2>/dev/null)"
+			LIBDVDREAD_LIBS="$(run_pkg_config ${pcpkg} --libs 2>/dev/null)"
+		fi
+	fi
+
+	config_h_have="$config_h_have LIBDVDREAD"
+	config_mk_flags="$config_mk_flags LIBDVDREAD"
+}
+

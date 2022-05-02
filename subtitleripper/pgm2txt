@@ -1,0 +1,162 @@
+#!/bin/sh
+# Call gocr to convert pgm images into ASCII text
+# (this file is part of subtitle2pgm)
+# Please modify it to your needs
+#set -x
+
+# Exit script on Control-C (signal 2)
+trap 'echo "Control-C pressed."; exit 1;' 2
+
+###### Configuration section #################
+
+# If you already have a GOCR database adjust.
+# If in doubt, keep the default
+DB_PATH=./db/
+
+# Adjust this path to where the files
+# gocrfilter_en.sed  gocrfilter_fr.sed  gocrfilter_none.sed
+# are located
+PATH_TO_LANGUAGE_FILTER=~/sourceforge/subtitleripper/src/
+
+# set your options for gocr. Please read the gocr
+# docs to find out more about this
+
+# GOCR options for pure data base mode 
+GOCR_OPTIONS_DB_ONLY="-s 8 -d 0 -m 130 -m 4 -m 256 -m 32"
+
+# GOCR options for with automatic char recognition
+GOCR_OPTIONS_AUTO="-s 10 -m 130"
+
+# Select the language of the default filter.
+# use -f command line option to override this
+# valid are: none, en, fr
+LANGUAGE=none 
+
+# Choose your favorite image viewer if you want to see
+# the current pgm image while gocr is running.
+# Enable the viewer with -v command line option.
+IMAGE_VIWER=xv
+IMAGE_VIEWER_OPTIONS=-q
+
+###### End of configuration section #########
+
+
+DISPLAY_PGM=false
+
+# function to print usage information
+usage()
+{
+cat << _END_
+Usage:
+    pgm2txt [-v] [-d] [-f {en|fr|none}] pgm_base_name 
+
+    pgm_base_name  are the common first letters of your
+                   subtitle pgm files. E.g. "my_movie" if all your pgm files
+                   are matched by "my_movie*.pgm"
+ 
+    -f lang        You can optionally specify a language filter
+                   using this option. Currently English,
+                   French and German are supported. 
+                   lang = {en|fr|de|none}
+                   default: none
+
+    -v             View the pgm-file while GOCR is converting
+         
+    -d             Use GOCR options for "database only" mode
+
+
+    Example:
+      Convert PGM files with english language filter and
+      view the PGM while GOCR is converting
+
+      pgm2txt -v -f en my_movie
+
+
+    Version: 0.13
+_END_
+exit 1
+}
+
+# if no argument is given display usage information
+if [ $# -eq 0 ]; then
+    usage
+fi
+
+# set default GOCR options to auto
+GOCR_OPTIONS=${GOCR_OPTIONS_AUTO}
+
+# process command line options
+while getopts ":vdf:" Option
+do
+  case $Option in
+    v) DISPLAY_PGM=true ;;
+    f) LANGUAGE=$OPTARG ;;
+    d) GOCR_OPTIONS=${GOCR_OPTIONS_DB_ONLY} ;;
+    *) usage ;; 
+  esac
+done
+
+# The first argument that is not an option is the pgm file basename
+shift $(($OPTIND - 1))
+PGM_BASE_NAME=$1
+    
+if [ -f ${PATH_TO_LANGUAGE_FILTER}gocrfilter_${LANGUAGE}.sed ]; then
+	FILTER_SCRIPT=${PATH_TO_LANGUAGE_FILTER}gocrfilter_${LANGUAGE}.sed
+	echo "Using ${FILTER_SCRIPT} to filter gocr output"
+else
+	echo "    ------------------------------------------------"
+	echo "    No filter file for language >${LANGUAGE}< found!"
+	echo "    Please edit PATH_TO_LANGUAGE_FILTER in pgm2txt"
+	echo "    and make sure you have choosen a valid language!"
+	echo "               No spell checking activated!         "
+	echo "    ------------------------------------------------"
+	LANGUAGE=none
+fi
+
+
+# Check if gocr is in the search path
+GOCR_TEST_PATH=`which gocr`
+if [ ! -x "${GOCR_TEST_PATH}" -a ! -L "${GOCR_TEST_PATH}" ]; then
+	echo "  ------------------------------------------------ "
+	echo "                Cannot find gocr !                 "
+	echo "    Please make sure you have installed gocr and   "
+	echo "    add it to your search path.                    "
+	echo "  ------------------------------------------------ "
+	exit 1
+fi
+
+# create a local db file if it does'n exist
+if [ ! -d ${DB_PATH} ]; then
+    echo creating directory ${DB_PATH}
+    mkdir ${DB_PATH}
+fi
+
+if [ ! -f ${DB_PATH}/db.lst ]; then
+    echo creating empty file ${DB_PATH}/db.lst
+    touch ${DB_PATH}/db.lst
+fi
+
+# run gocr on all pgm files
+for i in ${PGM_BASE_NAME}*.pgm ${PGM_BASE_NAME}*.pgm.gz
+do
+    if [ ! -f $i ]; then
+        echo "File $i not found"
+        continue
+    fi
+
+    echo "Converting $i into text"
+    if [ ! "$DISPLAY_PGM" = "false" ]; then
+        ${IMAGE_VIWER} ${IMAGE_VIEWER_OPTIONS} $i &
+    fi
+    if [ "none" = "${LANGUAGE}" ]; then
+        gocr ${GOCR_OPTIONS} -p ${DB_PATH}  $i > $i.txt
+    else
+        gocr ${GOCR_OPTIONS} -p ${DB_PATH}  $i | sed -f ${FILTER_SCRIPT} -  > $i.txt
+    fi
+
+    # close the viewer
+    if [ ! "$DISPLAY_PGM" = "false" ]; then
+        killall ${IMAGE_VIWER}
+    fi
+done
+

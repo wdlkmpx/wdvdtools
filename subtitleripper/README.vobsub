@@ -1,0 +1,260 @@
+Author: Arne Driescher    driescher@mpi-magdeburg.mpg.de
+Date of last revision: 2002-10-30
+
+Acknowledgment: The VobSub encoder is stolen from MPlayer
+                and I wish to thank the Mplayer team for
+                their great work.
+                Special thaks goes to  Kim Minh Kaplan who
+                did the major work of writing the 
+                vobsub decoding and encoding. 
+
+
+What is subtitle2vobsub?
+========================
+
+VobSub is a well known subtitle format that saves subtitles nearly in
+the same format as it appears in DVD subtitle streams.  From a
+technical point of view, VobSub saves subtitles as little images.  The
+advantage is that there is no limit to the supported character set or
+language and it does not require any kind of OCR software for
+that. The disadvantage is that a VobSub file is much bigger than ASCII
+based subtitle files and you might have to consider this if the subtitle
+file should be saved on the same CD as your XviD/DIVX files.
+
+subtitle2vobsub is a little tool that writes a DVD subtitle stream in
+the format recognized by movie players as VobSub. In short, if you are
+looking for an easy way to rip subtitles from your DVD and don't
+really care about wasting a few MB this is the tool for you.
+
+What is vobsub2pgm?
+===================
+vobsub2pgm is a little tool that allows you to convert vobsub files
+into ASCII subtitles (srt-format) in nearly the same way as you would do with
+*.vob files. This program is contributed by  Jean-Yves Simon (LtWp).
+You might need it if you want to convert your avi file with
+vobsub subtitles into "ogg" format because ogg currently supports
+only ASCII subtitles. This tool is currently not documented but if you want
+to use it start reading "README.subtitle2pgm" and "README.srttool" and
+consider "vobsub2pgm" as an alternative to "subtitle2pgm".
+ 
+
+Alternatives
+============
+MPlayer comes with a tool called mencoder that also supports
+VobSub subtitle outputs. This program is based on the mplayer
+source and is therefore technically nearly identical. 
+
+Frontends
+=========
+dvd::rip is an exelent frontend to transcode and supports subtitle
+ripping to VobSub format since version 0.47_06.
+It can be found at http://www.exit1.org/dvdrip/
+
+
+General usage
+=============
+
+To rip the subtitle stream from a DVD you need the *.vob files plus
+the corresponding ifo-file.
+
+Let's assume you got the files
+vts_01_1.vob
+vts_01_2.vob
+vts_01_3.vob
+vts_01_4.vob
+  and
+vts_01_0.ifo
+
+on your hard disk and you have made sure that these files are
+un-encrypted!  (You might want to have a look at tccat (part of
+transcode) or css_cat (part of libcss) but please respect the
+applicable law in your country.).
+
+First you have to extract the subtitle stream
+embedded in the vob files by
+ 
+  cat vts_01_?.vob | tcextract -x ps1 -t vob -a 0x20 > mysub.ps1
+
+The -a option specifies the language of the subtitle stream.  Read
+your DVD cover about supported languages and experiment with values
+starting from 0x20 to find the language you want.
+
+If you are using transcode version better than v0.6.2.20021017
+(check with transcode -v) the tcprobe command gives
+you a list of supported subtitles. E.g.:
+tcprobe -i /path/to/your/vobs
+would output something like
+...
+(dvd_reader.c) subtitle 00=<en>
+(dvd_reader.c) subtitle 01=<de>
+(dvd_reader.c) subtitle 02=<nl>
+(dvd_reader.c) subtitle 03=<ar>
+...
+
+So, in this example, to get Dutch subtitles, the option to -a would be 0x22.
+
+Now convert the file mysub.ps1 into the VobSub format by
+  subtitle2vobsub -i vts_01_0.ifo -p mysub.ps1 -o movie_name
+
+and copy the original ifo-file 
+  cp  vts_01_0.ifo movie_name.ifo
+
+You should now have the files
+movie_name.ifo
+movie_name.idx
+movie_name.sub
+
+Now test your newly ripped subtitles for instance by
+using mplayer with the options
+
+ mplayer vts_01_1.vob -vobsub movie_name -vobsubid 0
+
+Please note that I had problems with mplayer version < 0.90-pre6
+and you might want to consider an upgrade to the newest mplayer
+version.
+
+
+Extracting VobSub for multi CD rips
+===================================
+
+subtitle2vobsub comes with the -e option allowing
+you to extract only parts of the original subtitle
+stream. Let's assume you have a two CD rip of your 
+DVD. The first CD runs from 0:00:00 to 0:45:00
+and the second CD from 0:45:00 to 1:30:00.
+
+(If you don't know the time stamps, 
+	tcprobe -i MyMovie.avi 
+gives you the number of frames and the frame time 
+allowing you to calculate the length of your file
+in seconds.) 
+
+
+You can now extract the subtitles for each CD by 
+
+subtitle2vobsub -e 0,2700,0 -i vts_01_0.ifo -p mysub.ps1 -o movie_name_cd1
+subtitle2vobsub -e 2700,5400,0 -i vts_01_0.ifo -p mysub.ps1 -o movie_name_cd2
+
+The -e option expects the start and end time in the original subtitle
+stream that you want to extract in seconds (e.g. 2700 = 30*60 seconds)
+and as third parameter the new start time. 
+
+A user reported that a negative "new start time" fixed his out of sync
+problem. So, if you have an out of sync problem try a negative 
+"new start time" and probably have a look at the -t option too.
+
+
+
+
+How to handle files when the ifo-file is missing?
+=================================================
+
+With some luck you can convert vts*.vob files
+into VobSub subtitles without an ifo-file.
+The ifo-file is responsible for providing
+the following information:
+- original width and height of the movie
+- color palette used for subtitles
+- language code (e.g. "en" for English)
+- subtitle id
+
+All this information is stored in the idx-file generated by
+subtitle2vobsub. In case a ifo-file is not found, some default values
+are assumed and written to the idx-file.  If these default values do
+not work for you, you can load the idx-file into any editor and
+modify it to your needs.  You can also set width, height and palette by
+command line options (-s width,height and -c <16 hex values comma
+separated>) if you like.
+
+A missing ifo-file is no problem for mplayer. It will complain with
+the message
+ Can't open IFO file
+but works anyway the way it is supposed to do.
+(I have no knowledge if Windows player support this too.)
+
+
+Adding more languages 
+=====================
+
+The VobSub file format supports multi-language subtitles.
+This means you can put e.g. French and English subtitles
+in one VobSub file and later tell your player what
+subtitle language you want to see. 
+subtitle2vobsub supports this by the -a option. 
+
+The way to produce a multi-language VobSub file is as follows:
+1)
+	Extract a ps1 stream for every language you want to support
+        from your vob-files. E.g. for English and German subtitles:
+	  cat vts_01_?.vob | tcextract -x ps1 -t vob -a 0x20 > mysub_en.ps1
+	  cat vts_01_?.vob | tcextract -x ps1 -t vob -a 0x21 > mysub_de.ps1
+
+2)      Convert the first stream as usual. Please note that the first
+        stream will be the default language. E.g.
+          subtitle2vobsub -i vts_01_0.ifo -p mysub_en.ps1 -o movie_name
+	
+
+3)	Add the second subtitle language by using the -a option
+          subtitle2vobsub -a 1 -i vts_01_0.ifo -p mysub_de.ps1 -o movie_name
+
+	The argument to -a is the subtitle index used by your DVD for
+	this language and is needed to find the two letter language code
+	(e.g. "en", "fr","hu",...) for this subtitle stream in the
+	ifo-file. 
+	So, if you don't have an ifo-file you can override the default
+	("en") by giving these two letters as a second argument to the
+	-a option, e.g.
+          subtitle2vobsub -a 1,de -p mysub_de.ps1 -o movie_name
+
+Hint: 
+Use the -vobsubid switch for mplayer to select the language you want,
+e.g. for this example -vobsubid 0 for English or -vobsubid 1 for
+German. 
+
+
+Packing your results 
+==================== 
+
+VobSub-Files, especially with more than one language can easily become
+very big. It is therefore a good idea to compress the file. The
+original Windows-version uses the rar-compressor for this
+(http://www.rarlab.com/) and many avi-players support reading the
+VobSub-subtitles directly from the rar-file. E.g. MPlayer supports
+this too.  At the time of writing, the free decompression library
+(http://www.unrarlib.org) for rar used by MPlayer supports only rar
+version < 3.0.  So, I recommend to get a 2.x version of rar
+and pack your files with it.
+Example:
+  rar a MyMovie MyMovie.idx MyMovie.sub MyMovie.ifo
+will produce MyMovie.rar with the three files
+MyMovie.idx, MyMovie.sub and MyMovie.ifo in it.
+
+Please note that it is a good idea to use exactly the same base name
+for the rar-file as for the avi-file. Newer MPlayer versions
+automatically open subtitle files (even if not compressed with rar)
+if they have the same base name as the movie. This feature is very
+convenient when starting your movie from a file manager where
+it is awkward to add any options.
+
+ 
+Misc options
+=============
+-h short help output
+
+-v enables verbose mode resulting in some more debug output messages
+
+-t <factor> scale time. If you encode your video stream with
+   an other frame rate then the original one you might have to
+   adjust the VobSub timing. 
+ 
+Known Bugs
+=============
+1) The current version sets the first language always to
+   English with langid=0 even if the ifo-file states otherwise.
+2) make produces a compiler warning:
+vobsub.c:912: warning: assignment makes pointer from integer without a cast
+(compiler produced stdout or stderr output, i won't cache)
+
+You can ignore the warning.
+(For technical reasons I don't want to modify the mplayer vobsub.c file
+too much. This allows me to easily track changes/bugfixes to the original file.)

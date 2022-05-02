@@ -1,0 +1,81 @@
+# https://github.com/wxWidgets/wxWidgets/blob/master/appveyor.yml
+# https://github.com/wxWidgets/wxWidgets/blob/master/build/tools/appveyor.bat
+
+image: Visual Studio 2019
+
+#cache: C:\Tools\vcpkg\installed\
+
+environment:
+  APPVEYOR_SAVE_CACHE_ON_ERROR: true
+  matrix:
+    #- compiler: msvc
+    - compiler: mingw32
+    #- compiler: mingw64
+    - compiler: cygwin
+
+platform:
+  - x86-windows
+
+configuration:
+  - Release
+
+for:
+  -
+    matrix:
+      only:
+        - configuration: Release
+          platform: x86-windows
+          compiler: msvc
+#   install:
+#     - cd C:\Tools\vcpkg
+#     - if not exist downloads mkdir downloads
+#     - cd downloads
+#     - cd ..
+#     - cd %APPVEYOR_BUILD_FOLDER%
+#     - vcpkg install zlib:x86-windows
+    before_build:
+      - cd %APPVEYOR_BUILD_FOLDER%
+      - mkdir build
+      - cd build
+    build_script:
+      - call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\Build\\vcvars32.bat"
+#     - call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+      - cmake -G "NMake Makefiles" -DBUILD_STATIC=ON ..
+      - nmake
+      - if %ERRORLEVEL% GEQ 1 EXIT /B 1
+  -
+    matrix:
+      only:
+        - configuration: Release
+          platform: x86-windows
+          compiler: mingw32
+    environment:
+      MSYSTEM: MINGW32
+      CHERE_INVOKING: yes
+    build_script:
+      - cd %APPVEYOR_BUILD_FOLDER%
+      - C:\msys64\usr\bin\bash -lc "./configure && make"
+  -
+    matrix:
+      only:
+        - configuration: Release
+          platform: x86-windows
+          compiler: mingw64
+    environment:
+      CHERE_INVOKING: yes
+      MSYSTEM: MINGW64
+    build_script:
+      - cd %APPVEYOR_BUILD_FOLDER%
+      - C:\msys64\usr\bin\bash -lc "./configure && make"
+  -
+    matrix:
+      only:
+        - configuration: Release
+          platform: x86-windows
+          compiler: cygwin
+    environment:
+      CHERE_INVOKING: yes
+    build_script:
+      - cd %APPVEYOR_BUILD_FOLDER%
+      - C:\cygwin\bin\bash -lc "./configure && make"
+

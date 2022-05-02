@@ -1,0 +1,15 @@
+2002-10-14
+	- Progress report added
+	- Bug in -C option fixed
+2002-10-15
+	- Progress report now starts with first file 
+	  and outputs the full filename 
+2002-10-20
+	- Correct handling for -a option to support
+	  multi-language VobSub files
+2002-10-28
+	- Bug fix: Crop failed on empty images (reported by Joern Reder)
+
+2003-02-13
+	- Missing break in switch statement added, compiler warnings for
+	  gcc 3.2 (SuSE 8.1) removed

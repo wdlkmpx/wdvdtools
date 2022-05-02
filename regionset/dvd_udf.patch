@@ -1,0 +1,73 @@
+diff -Naur regionset-0.2/dvd_udf.c regionset-0.2-patched/dvd_udf.c
+--- regionset-0.2/dvd_udf.c	2012-12-30 22:31:15.000000000 +0800
++++ regionset-0.2-patched/dvd_udf.c	2022-05-04 11:49:21.000000000 +0800
+@@ -26,6 +26,7 @@
+  
+ /* This is needed for 64 bit file seek */
+ /* Since older libraries don't seem to support this, i use a workaround */
++#define _GNU_SOURCE 1
+ #define _LARGEFILE64_SOURCE 1
+ 
+ #include <stdio.h>
+@@ -75,7 +76,7 @@
+ 
+ FILE* dvdromfile = NULL;  // CD/DVD-ROM block device or image file
+ char Path[PATH_MAX];
+-char Filename[PATH_MAX];
++char Filename[PATH_MAX-10];
+ 
+ struct DVD_Video_Disc {
+ 	int segments;
+@@ -146,14 +147,14 @@
+ int udf_update_segments(void) 
+ {
+ 	char file[PATH_MAX];
+-	char filename[PATH_MAX];
++	char filename[PATH_MAX-10];
+ 	int err;
+ 	if (disc.currentsegment >= 0) fclose(dvdromfile);
+ 	disc.currentsegment = -1;
+ 	disc.segments = 0;
+ 	err = 0;
+ 	do {
+-		sprintf(file, "%s.%03d", Filename, disc.segments);
++		snprintf(file, sizeof(file), "%s.%03d", Filename, disc.segments);
+ 		if (!(err = udf_find_file(Path, file, filename))) {
+ 			if ((dvdromfile = fopen(filename, "r")) == NULL) {
+ 				err = 1;   // file not readable
+@@ -178,13 +179,13 @@
+ int UDFReadLB(unsigned long int lb_number, unsigned int block_count, unsigned char *data) 
+ {
+ #if defined off64_t
+-	fpos64_t pos;
++	off64_t pos;
+ #else
+ 	u64 pos;  // 64 bit position
+ #endif
+ 	int result, segment, segblocks, numread;
+ 	char file[PATH_MAX];
+-	char filename[PATH_MAX];
++	char filename[PATH_MAX-10];
+ 	if (disc.segments > 1) {  // split image file
+ 		segment = 0;
+ 		result = 0;
+@@ -195,7 +196,7 @@
+ 				if (disc.currentsegment != segment) {          // segment not open, yet?
+ 					if (disc.currentsegment >= 0) fclose(dvdromfile);
+ 					disc.currentsegment = -1;
+-					sprintf(file, "%s.%03d", Filename, segment);
++					snprintf(file, sizeof(file), "%s.%03d", Filename, segment);
+ 					if (udf_find_file(Path, file, filename)) return 0;
+ 					if ((dvdromfile = fopen(filename, "r")) == NULL) return 0;
+ 					disc.currentsegment = segment;               // remember open segment number
+@@ -219,8 +220,8 @@
+ 		return result;
+ 	} else if (dvdromfile != NULL) {  // block device or one image file
+ #if defined off64_t
+-		pos = (fpos64_t)lb_number * (fpos64_t)DVD_VIDEO_LB_LEN;
+-		if (fsetpos64(dvdromfile, &pos) < 0) return 0; // position not found
++		pos = (off64_t)lb_number * (off64_t)DVD_VIDEO_LB_LEN;
++		if (fsetpos64(dvdromfile, (fpos64_t*)&pos) < 0) return 0; // position not found
+ #else
+ 		pos = (u64)lb_number * (u64)DVD_VIDEO_LB_LEN;
+ 		fseek(dvdromfile, 0, SEEK_SET);

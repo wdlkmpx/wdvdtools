@@ -1,0 +1,49 @@
+Author: Arne Driescher 
+Date: Apr 19 2002
+Project homepage: http://subtitleripper.sourceforge.net
+
+GOCR
+====
+I am not involved in gocr development nor do I know any tricks
+on how to make it work better. 
+However, Joerg Schulenburg, the main gocr developer,
+<jschulen@altmark.nat.uni-magdeburg.de>
+has recently done some major improvements to gocr
+that are especially designed for the problem at hand.
+So, let me introduce you to the new features because
+they are currently not well documented but are
+extremely useful.
+
+gocr version: The features I am talking about are
+currently only available in the CVS version.
+This means any version newer than 27-Feb-2002
+should do. I recommend to get the most up-to-date
+version from the CVS.
+
+1) gocr now supports a "database only" mode. 
+   Characters are either found in the database
+   or not. Heuristic is disabled. Use -m 256
+   to activate this feature.
+
+2) If a letter is not found in the database gocr
+   can ask you what letter it is and add it to
+   the database. This feature, activated by -m 130,
+   is old. New is the option to input more than
+   one letter.
+   Example:
+   gocr shows you a picture of a letter >>tt<<.
+   Obviously, these are two letters but gocr
+   has recognised them as one. The new version
+   allows you to enter >>"tt"<< to circumvent
+   the problem. Please note that you have to
+   write the >>"<< sign (quotation marks) surrounding
+   the letters if you enter more than one letter.
+
+To summerise my experience with gocr, I found that
+the following options work best on my test examples:
+-s 7 -d 0 -m 130 -m 256 -m 32
+
+Use gocr -h to find out more about the available options.
+
+
+

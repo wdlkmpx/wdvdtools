@@ -1,0 +1,103 @@
+Author: Arne Driescher 
+Date: 02/28/2002
+
+
+What is srttool?
+================
+
+srttool is a commandline tool to do different modifications to srt subtitle 
+files. The file format is identical to the one produced by "subrip"
+for MS-Windows. 
+It is especially designed to work together with subtitle2pgm.
+
+Some useful information is also contained in  the main README file in this directory.
+
+
+General usage
+=============
+
+srttool [-v] [options]
+
+srttool expects an input file on either stdin or the file given to the -i option.
+
+The output is usually written to stdout and can be redirected to a file by using
+the -o option.
+
+
+Options
+========
+
+-h                Display a short help text
+
+-v                Print some debugging information to stderr (verbose).
+
+-i <filename>     Get input from <filename> instead of stdin.
+
+-o <filename>     Write output to <filename> instead of stdout.
+
+-c <first,last>   Only process entries where the tag numbers
+                  in the input stream are in the range 
+                  first <= tag number <= last.
+                    
+-r                Renumber the tags starting from 1 independent
+                  of what tag numbers the input tags have.
+
+-d <time>         Adjust all time stamps by <time> seconds.
+                  <time> can be positive or negative.
+
+-a <hh:mm:ss,ms>  Set the first time stamp in output stream
+                  (independend of its tag number) to the given
+                  value hh:mm:ss,ms and adjust all following
+                  time stamps to keep there relative time distance
+                  to the original one.
+
+-s                Substitute filename after time stamps by its content.
+
+-x <basename>     Reverse -s operation: produce basename.srtx 
+	          and basenameXXXX.txt files.;
+
+-e <seconds>      Expand the subtitle hour by <seconds>. Use this 
+                  option if you have the feeling that your subtitles
+                  display time is drifting over time and you want
+                  to compensate for that. Internally, this
+                  function assumes that one hour in the input time
+                  is equal to "3600+<seconds>" seconds. Naturally,
+                  the hour in the output time stamps is still 3600 seconds".
+                  So, positive values for <seconds> make your subtitles displayed
+                  earlier and negative values later. Currently,
+                  only adjustments for less than 60 seconds are considered
+                  valid. The time scaling is done _after_ the -d
+                  and -a option are processed to let you specify time
+                  offsets in the original time scale.
+ 
+Misc information
+--------------------
+The option -v enables some debug output. Use it as
+the first option to see all the debug output available.
+
+The -x <basename> option does the reverse operation of the
+-s option. That mean the input srt file is split into
+a srtx file that contains references (filesnames) and the
+real text files. The basename of the text files is given
+by <basename> while the srtx file is written to stdout
+or if -o <outputfile> is given to outputfile.
+This option is only useful in special situations
+where you want to keep modifications of either the
+text or the timestamp but replace the other one from
+an alternative source. E.g. you spend hours on correcting
+some buggy time stamps for one language and now you
+want to reuse the time stamps with the text
+of an other language.
+Or as in my case: I spent lots of time to remove all
+the ocr bugs in one srt file only to find out that
+subtitle2pgm produced buggy time stamps after the first 45 minutes. 
+So, I used the -x option to save all my corrected text
+and merged the corrected text with an other
+srtx file that was produced by a correct working
+version of subtitle2pgm. 
+
+You can combine most options the way you would expect it.
+E.g. extracting all subtitles from 100 to the end of file,
+renumber them and let them start at 00:00:01,000
+can be written in one line:
+ srttool -c 100,99999 -r -a 00:00:01,000 -i movie_subtitle.srt
